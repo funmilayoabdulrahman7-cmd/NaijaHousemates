@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Housemates Dashboard</title>
+    <style>
+        /* Base Premium Dark Styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #0b0c10; 
+            color: #f3f4f6; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 10px;
+        }
+        
+        /* Header styling */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-b: 1px solid #1f2937;
+            background: #111827;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        header h1 { color: #f59e0b; font-size: 1.2rem; font-weight: 900; }
+        .live-tag {
+            background-color: rgba(220, 38, 38, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        /* Responsive Grid Content Layout */
+        main { display: flex; flex-direction: column; gap: 12px; }
+        section {
+            background: #111827;
+            border: 1px solid #1f2937;
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        /* Stats & Profiles */
+        .profile-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            background: #f59e0b;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .stat-group { margin-bottom: 12px; }
+        .stat-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; font-weight: bold;}
+        .stat-bar-bg { width: 100%; bg: #1f2937; background: #374151; height: 8px; border-radius: 4px; overflow: hidden;}
+        .stat-bar-fill { height: 100%; transition: width 0.3s ease; }
+
+        /* Color classes */
+        .c-clout { color: #f59e0b; } .bg-clout { background: #f59e0b; }
+        .c-stamina { color: #22d3ee; } .bg-stamina { background: #22d3ee; }
+        .c-paranoia { color: #c084fc; } .bg-paranoia { background: #c084fc; }
+
+        /* Action Panel Buttons */
+        .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;}
+        .btn {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            padding: 12px 4px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-arena { background: #d97706; color: #000; border: none; }
+        .btn-diary { background: rgba(88, 28, 135, 0.6); border: 1px solid rgba(147, 51, 234, 0.4); }
+
+        /* Snitch Box Panel */
+        #snitch-panel {
+            background: rgba(88, 28, 135, 0.2);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+        .hidden { display: none !important; }
+        .snitch-flex { display: flex; gap: 6px; margin-top: 8px;}
+        .snitch-flex select, .snitch-flex input {
+            background: #0b0c10;
+            border: 1px solid #374151;
+            color: white;
+            padding: 8px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        .btn-drop { background: #9333ea; border: none; padding: 0 12px; border-radius: 6px; font-weight: bold; color: white;}
+
+        /* Live Feed Log Terminal */
+        .feed-box { height: 260px; display: flex; flex-direction: column; margin-top: 12px;}
+        .feed-container {
+            flex-1: 1;
+            background: #0b0c10;
+            border: 1px solid #1f2937;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+        }
+        .feed-line { padding: 4px 0; border-bottom: 1px solid rgba(31, 41, 55, 0.3); }
+
+        /* Housemates list rows */
+        .hm-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: rgba(31, 41, 55, 0.4);
+            border: 1px solid #1f2937;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .badge { background: rgba(147, 51, 234, 0.15); color: #c084fc; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>👁️ NAIJA HOUSEMATES</h1>
+        <div class="live-tag">🔴 SEASON 1 LIVE</div>
+    </header>
+
+    <main>
+        <!-- Player Live Stats Profile Section -->
+        <section>
+            <div class="profile-row">
+                <div class="avatar">C1</div>
+                <div>
+                    <h3 style="font-weight: bold;">Chidi (Cruise Master)</h3>
+                    <p style="font-size: 11px; color: #9ca3af;">Status: <span style="color: #4ade80; font-weight: bold;">Active</span></p>
+                </div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-header"><span class="c-clout">🔥 CLOUT</span><span id="stat-clout">500</span></div>
+                <div class="stat-bar-bg"><div id="bar-clout" class="stat-bar-fill bg-clout" style="width: 50%;"></div></div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-header"><span class="c-stamina">⚡ STAMINA</span><span id="stat-stamina">100%</span></div>
+                <div class="stat-bar-bg"><div id="bar-stamina" class="stat-bar-fill bg-stamina" style="width: 100%;"></div></div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-header"><span class="c-paranoia">👁️ PARANOIA</span><span id="stat-paranoia">15%</span></div>
+                <div class="stat-bar-bg"><div id="bar-paranoia" class="stat-bar-fill bg-paranoia" style="width: 15%;"></div></div>
+            </div>
+        </section>
+
+        <!-- Main Actions Dashboard and Feed Panel -->
+        <section>
+            <h4 style="font-size: 11px; color: #9ca3af; text-transform: uppercase;">House Actions</h4>
+            <div class="actions-grid">
+                <div class="btn" onclick="handleAction('task')"><span>🧹</span><p>Daily Task</p></div>
+                <div class="btn btn-arena" onclick="handleAction('arena')"><span>🏆</span><p>Arena Game</p></div>
+                <div class="btn btn-diary" onclick="handleAction('diary')"><span>🚪</span><p>Diary Room</p></div>
+            </div>
+
+            <!-- Snitch Element Portal Box -->
+            <div id="snitch-panel" class="hidden">
+                <h4 style="font-size: 11px; color: #c084fc; text-transform: uppercase;">🤫 Drop Anonymous Whisper</h4>
+                <div class="snitch-flex">
+                    <select id="snitch-target" style="width: 35%;"></select>
+                    <input id="snitch-text" type="text" placeholder="Gossip to Biggie...">
+                    <button class="btn-drop" onclick="submitSnitch()">Drop</button>
+                </div>
+            </div>
+
+            <div class="feed-box">
+                <h4 style="font-size: 11px; color: #9ca3af; text-transform: uppercase; margin-bottom: 6px;">Live House Feed</h4>
+                <div id="feed-container" class="feed-container">
+                    <div class="feed-line" style="color: #f59e0b; font-weight: bold;">[BIGGIE]: Welcome to the house. No loose guarding o!</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Active Competing Characters Node -->
+        <section>
+            <h4 style="font-size: 11px; color: #9ca3af; text-transform: uppercase; margin-bottom: 10px;">Housemates (5)</h4>
+            <div id="housemates-list"></div>
+        </section>
+    </main>
+
+    <script>
+        let clout = 500;
+        let stamina = 100;
+        let paranoia = 15;
+
+        const aiHousemates = [
+            { name: "Mama G (AI)", status: "Steady Gossiping" },
+            { name: "Rich Kid (AI)", status: "Flexing London" },
+            { name: "Tunde (AI)", status: "Low-key Scheming" },
+            { name: "Blessing (AI)", status: "Eyeing HOH" },
+            { name: "Amaka (AI)", status: "On Cruise" }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderHousemates();
+            populateSnitchTargets();
+        });
+
+        function renderHousemates() {
+            const listContainer = document.getElementById("housemates-list");
+            listContainer.innerHTML = "";
+            aiHousemates.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "hm-row";
+                div.innerHTML = `<span>${item.name}</span><span class="badge">${item.status}</span>`;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function populateSnitchTargets() {
+            const select = document.getElementById("snitch-target");
+            select.innerHTML = "";
+            aiHousemates.forEach((item, index) => {
+                const opt = document.createElement("option");
+                opt.value = index;
+                opt.innerText = item.name.split(" ")[0];
+                select.appendChild(opt);
+            });
+        }
+
+        function updateUI() {
+            document.getElementById("stat-clout").innerText = clout;
