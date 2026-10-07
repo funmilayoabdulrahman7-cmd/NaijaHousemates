@@ -9,7 +9,7 @@
 body{margin:0;padding:16px;background:#0a0b10;color:#fff;font-family:system-ui,sans-serif}
 h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
 .sub{text-align:center;font-size:.8rem;color:#8b95a7;margin-bottom:6px}
-#status{text-align:center;font-size:.8rem;color:#9aa;min-height:1.2em;margin-bottom:6px}
+#status{text-align:center;font-size:.85rem;color:#9aa;min-height:1.2em;margin-bottom:6px}
 .card{background:#111827;border:1px solid #1f2a3d;border-radius:14px;padding:12px;margin:10px 0}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .name{font-weight:700;font-size:1rem}
@@ -18,18 +18,19 @@ h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
 .bar{height:8px;background:#1f2937;border-radius:4px;margin-top:10px;overflow:hidden}
 .fill{height:100%;background:#e63946;width:0;transition:width .4s}
 button{background:#e63946;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:.95rem;font-weight:700;min-width:84px}
-button:disabled{opacity:.5}
+button:disabled{opacity:.4}
 </style>
 </head>
 <body>
 <h1>🗳️ FAN EVICTION VOTE</h1>
-<div class="sub">Tap Evict to vote out your least favourite AI housemate</div>
+<div class="sub">One vote per person each round</div>
 <div id="status">Loading...</div>
 <div id="list"></div>
 
 <script>
 const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
 const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+const ROUND = 1; // change to 2, 3... to open a new voting round
 const HDR = {
   'apikey': SUB_KEY,
   'Authorization': `Bearer ${SUB_KEY}`,
@@ -38,6 +39,21 @@ const HDR = {
 const list = document.getElementById('list');
 const statusEl = document.getElementById('status');
 let busy = false;
+
+// ---- voter ID (saved on this phone) ----
+function makeId() {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+}
+let voterId = '';
+try {
+  voterId = localStorage.getItem('nh_voter') || '';
+  if (!voterId) { voterId = makeId(); localStorage.setItem('nh_voter', voterId); }
+} catch (e) { voterId = makeId(); }
+
+const votedKey = 'nh_voted_r' + ROUND;
+function hasVoted() { try { return !!localStorage.getItem(votedKey); } catch (e) { return false; } }
+function markVoted(name) { try { localStorage.setItem(votedKey, name); } catch (e) {} }
 
 async function loadVotes() {
   try {
@@ -51,6 +67,7 @@ async function loadVotes() {
       return;
     }
     const total = data.reduce((s, v) => s + v.vote_count, 0) || 1;
+    const locked = hasVoted();
     list.innerHTML = '';
     data.forEach(v => {
       const pct = Math.round((v.vote_count / total) * 100);
@@ -66,33 +83,46 @@ async function loadVotes() {
       card.querySelector('.cnt').textContent = v.vote_count + ' votes (' + pct + '%)';
       card.querySelector('.fill').style.width = pct + '%';
       const btn = card.querySelector('button');
-      btn.disabled = busy;
+      btn.disabled = busy || locked;
       btn.onclick = () => castVote(v.candidate_name);
       list.appendChild(card);
     });
-    if (!busy) statusEl.textContent = 'Live • updates every 10s';
+    if (!busy) {
+      statusEl.textContent = locked
+        ? '✅ You voted this round. Live results update every 10s'
+        : 'Live • updates every 10s';
+    }
   } catch (e) {
     statusEl.textContent = 'Cannot reach Supabase: ' + e.message;
   }
 }
 
 async function castVote(name) {
-  if (busy) return;
+  if (busy || hasVoted()) return;
   busy = true;
   document.querySelectorAll('button').forEach(b => b.disabled = true);
   statusEl.textContent = 'Sending vote...';
   try {
-    const r = await fetch(`${SUB_URL}/rest/v1/rpc/increment_vote`, {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/cast_vote`, {
       method: 'POST',
       headers: HDR,
-      body: JSON.stringify({ cand: name })
+      body: JSON.stringify({ cand: name, voter: voterId, rnd: ROUND })
     });
     if (!r.ok) throw new Error(r.status + ' ' + await r.text());
-    statusEl.textContent = '✅ Vote counted against ' + name;
+    const result = await r.json();
+    if (result === 'ok') {
+      markVoted(name);
+      statusEl.textContent = '✅ Vote counted against ' + name;
+    } else if (result === 'already') {
+      markVoted('x');
+      statusEl.textContent = '⚠️ You already voted this round';
+    } else {
+      statusEl.textContent = '❌ Vote rejected (' + result + ')';
+    }
   } catch (e) {
     statusEl.textContent = '❌ Vote failed: ' + e.message;
   }
-  setTimeout(() => { busy = false; loadVotes(); }, 1500);
+  busy = false;
   loadVotes();
 }
 
