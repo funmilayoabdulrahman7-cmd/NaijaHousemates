@@ -24,11 +24,15 @@ textarea{height:110px;resize:none}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.8rem;color:#8b95a7;margin-bottom:12px}
 .bar b{color:#fff;word-break:break-all}
 .out{background:#1f2937;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:700;font-size:.8rem}
-.app{border-bottom:1px solid #1f2a3d;padding:10px 0}
+.app{border-bottom:1px solid #1f2a3d;padding:12px 0}
 .app:last-child{border-bottom:0}
+.app .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .app .n{font-weight:700}
 .app .p{font-size:.85rem;color:#ccd;margin-top:2px;word-break:break-word}
 .app .v{font-size:.75rem;color:#f59e0b;margin-top:3px}
+.vbtn{flex-shrink:0;background:#e63946;color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:700;font-size:.8rem;min-width:92px}
+.vbtn:disabled{background:#1f2937;color:#8b95a7}
+#pv-msg{text-align:center;font-size:.85rem;min-height:1.2em;margin-bottom:6px}
 h2{font-size:1rem;color:#f59e0b;margin:0 0 8px}
 .hide{display:none}
 </style>
@@ -71,6 +75,7 @@ h2{font-size:1rem;color:#f59e0b;margin:0 0 8px}
 
 <div class="panel">
   <h2>📋 Current Auditions</h2>
+  <div id="pv-msg"></div>
   <div id="apps">Loading...</div>
 </div>
 
@@ -83,6 +88,9 @@ const $ = id => document.getElementById(id);
 
 let session = null;
 let mode = 'login';
+let myName = '';
+let myVotes = [];
+let votingBusy = false;
 
 function loadSession() {
   try { session = JSON.parse(localStorage.getItem('nh_session') || 'null'); } catch (e) { session = null; }
@@ -157,7 +165,7 @@ async function render() {
   const ok = await ensureFresh();
   $('auth-panel').className = ok ? 'panel hide' : 'panel';
   $('account-panel').className = ok ? 'panel' : 'panel hide';
-  if (!ok) return;
+  if (!ok) { myName = ''; myVotes = []; loadApps(); return; }
   $('who').textContent = session.email || '';
   try {
     const r = await fetch(`${SUB_URL}/rest/v1/rpc/my_application`, {
@@ -166,17 +174,32 @@ async function render() {
     if (r.status === 401) { saveSession(null); render(); return; }
     const mine = await r.json();
     if (typeof mine === 'string' && mine) {
+      myName = mine;
       $('form-area').className = 'hide';
       $('joined-area').className = '';
       $('joined-text').textContent = "You're in the auditions, " + mine + "!";
     } else {
+      myName = '';
       $('form-area').className = '';
       $('joined-area').className = 'hide';
     }
   } catch (e) {}
+  loadApps();
+}
+
+async function loadMine() {
+  myVotes = [];
+  if (!session || !(await ensureFresh())) return;
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/my_pitch_votes`, {
+      method: 'POST', headers: userHdr(), body: '{}'
+    });
+    if (r.ok) { const v = await r.json(); if (Array.isArray(v)) myVotes = v; }
+  } catch (e) {}
 }
 
 async function loadApps() {
+  await loadMine();
   try {
     const r = await fetch(`${SUB_URL}/rest/v1/rpc/get_applicants`, { method: 'POST', headers: PUBHDR, body: '{}' });
     const data = await r.json();
@@ -186,15 +209,48 @@ async function loadApps() {
     data.forEach((a, i) => {
       const d = document.createElement('div');
       d.className = 'app';
-      d.innerHTML = '<div class="n"></div><div class="p"></div><div class="v"></div>';
+      d.innerHTML = '<div class="top"><div><div class="n"></div><div class="p"></div><div class="v"></div></div><button class="vbtn"></button></div>';
       d.querySelector('.n').textContent = (i + 1) + '. ' + a.username;
       d.querySelector('.p').textContent = a.pitch;
       d.querySelector('.v').textContent = a.pitch_votes + ' pitch votes';
+      const b = d.querySelector('.vbtn');
+      if (!session) { b.textContent = '🔒 Log in'; b.disabled = true; }
+      else if (a.username === myName) { b.textContent = 'Your pitch'; b.disabled = true; }
+      else if (myVotes.indexOf(a.id) !== -1) { b.textContent = '✅ Voted'; b.disabled = true; }
+      else { b.textContent = '👍 Vote'; b.onclick = () => votePitch(a.id); }
       $('apps').appendChild(d);
     });
   } catch (e) {
     $('apps').textContent = 'Cannot reach Supabase: ' + e.message;
   }
+}
+
+const VMSG = {
+  ok: '✅ Vote counted!',
+  already: '⚠️ You already voted for this pitch.',
+  own_pitch: '⚠️ You cannot vote for your own pitch.',
+  login_required: '⚠️ Please log in to vote.',
+  unknown: '❌ Pitch not found.'
+};
+
+async function votePitch(id) {
+  if (votingBusy) return;
+  if (!(await ensureFresh())) { render(); return; }
+  votingBusy = true;
+  document.querySelectorAll('.vbtn').forEach(b => b.disabled = true);
+  $('pv-msg').textContent = 'Sending vote...';
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/vote_pitch`, {
+      method: 'POST', headers: userHdr(), body: JSON.stringify({ aid: id })
+    });
+    if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+    const res = await r.json();
+    $('pv-msg').textContent = VMSG[res] || ('❌ Rejected (' + res + ')');
+  } catch (e) {
+    $('pv-msg').textContent = '❌ Vote failed: ' + e.message;
+  }
+  votingBusy = false;
+  loadApps();
 }
 
 const MSGS = {
@@ -216,7 +272,7 @@ $('join-btn').onclick = async () => {
     });
     if (!r.ok) throw new Error(r.status + ' ' + await r.text());
     const res = await r.json();
-    if (res === 'ok') { $('msg').textContent = ''; await render(); loadApps(); $('join-btn').disabled = false; return; }
+    if (res === 'ok') { $('msg').textContent = ''; await render(); $('join-btn').disabled = false; return; }
     $('msg').textContent = MSGS[res] || ('❌ Rejected (' + res + ')');
   } catch (e) {
     $('msg').textContent = '❌ Failed: ' + e.message;
@@ -226,7 +282,6 @@ $('join-btn').onclick = async () => {
 
 loadSession();
 render();
-loadApps();
 setInterval(loadApps, 15000);
 </script>
 </body>
