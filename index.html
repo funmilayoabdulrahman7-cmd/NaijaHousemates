@@ -1,166 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Naija Housemates Dashboard</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0b0c10; color: #f3f4f6; font-family: system-ui, sans-serif; padding: 10px; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #111827; border-radius: 8px; margin-bottom: 12px; }
-        header h1 { color: #f59e0b; font-size: 1.2rem; font-weight: 900; }
-        .live-tag { background-color: rgba(220, 38, 38, 0.2); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.4); padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; }
-        main { display: flex; flex-direction: column; gap: 12px; }
-        section { background: #111827; border: 1px solid #1f2937; padding: 16px; border-radius: 12px; }
-        .profile-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .avatar { width: 44px; height: 44px; background: #f59e0b; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .stat-group { margin-bottom: 12px; }
-        .stat-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; font-weight: bold;}
-        .stat-bar-bg { width: 100%; background: #374151; height: 8px; border-radius: 4px; overflow: hidden;}
-        .stat-bar-fill { height: 100%; transition: width 0.3s ease; }
-        .c-clout { color: #f59e0b; } .bg-clout { background: #f59e0b; }
-        .c-stamina { color: #22d3ee; } .bg-stamina { background: #22d3ee; }
-        .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;}
-        .btn { background: #1f2937; border: 1px solid #374151; color: white; padding: 12px 4px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .btn-arena { background: #d97706; color: #000; border: none; }
-        .btn-diary { background: rgba(88, 28, 135, 0.6); border: 1px solid rgba(147, 51, 234, 0.4); }
-        .feed-box { height: 140px; display: flex; flex-direction: column; margin-top: 12px;}
-        .feed-container { background: #0b0c10; border: 1px solid #1f2937; padding: 10px; border-radius: 8px; overflow-y: auto; font-family: monospace; font-size: 12px; height: 100px; }
-        .feed-line { padding: 4px 0; border-bottom: 1px solid rgba(31, 41, 55, 0.3); }
-        
-        /* 💬 Chat Box styles */
-        .chat-box { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 12px; margin-top: 12px; display: flex; flex-direction: column; height: 280px; }
-        .chat-messages { flex: 1; background: #0b0c10; border-radius: 8px; padding: 8px; overflow-y: auto; font-size: 12px; margin-bottom: 8px; }
-        .chat-input-row { display: flex; gap: 6px; }
-        .chat-input-row input { background: #0b0c10; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; flex: 1; font-size: 12px; }
-        .btn-send { background: #f59e0b; color: black; border: none; padding: 0 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Naija Housemates</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:14px;background:#0a0b10;color:#fff;font-family:system-ui,sans-serif}
+h1{font-size:1.2rem;text-align:center;margin:6px 0 12px}
+.panel{background:#111827;border:1px solid #1f2a3d;border-radius:18px;padding:16px;margin-bottom:14px}
+.label{font-size:.8rem;font-weight:700;color:#8b95a7;letter-spacing:.5px;margin:0 0 8px}
+.stat{margin-bottom:10px}
+.stat .top{display:flex;justify-content:space-between;font-weight:700;font-size:.85rem}
+.track{height:12px;background:#1f2937;border-radius:8px;overflow:hidden;margin-top:4px}
+.fill{height:100%;border-radius:8px;transition:width .4s}
+#f-clout{background:#f59e0b}#f-stamina{background:#22d3ee}#f-paranoia{background:#e63946}
+.actions{display:flex;gap:8px}
+.actions button{flex:1;padding:14px 4px;border:0;border-radius:12px;font-weight:700;font-size:.85rem;color:#fff}
+#b-task{background:#1f2937}#b-arena{background:#d97706;color:#000}#b-diary{background:#3b1d6e}
+#feed{background:#08090d;border:1px solid #1f2a3d;border-radius:12px;padding:10px;height:150px;overflow-y:auto;font-family:monospace;color:#f59e0b;font-size:.85rem}
+#feed div{padding:4px 0;border-bottom:1px solid #151823}
+.chat{background:#1b2333;border-radius:18px;padding:14px}
+.chat h2{margin:0 0 10px;font-size:1rem;color:#f59e0b}
+#chat-container{background:#08090d;border-radius:12px;height:260px;overflow-y:auto;padding:10px;font-size:.9rem}
+#chat-container div{padding:3px 0;word-break:break-word}
+.who{color:#f59e0b;font-weight:700}
+.send{display:flex;gap:8px;margin-top:10px}
+.send input{flex:1;min-width:0;background:#08090d;color:#fff;border:1px solid #2a3550;border-radius:10px;padding:12px;font-size:1rem}
+.send button{background:#f59e0b;color:#000;font-weight:700;border:0;border-radius:10px;padding:0 18px;font-size:1rem}
+#name{width:100%;margin-bottom:8px;background:#08090d;color:#fff;border:1px solid #2a3550;border-radius:10px;padding:8px;font-size:.85rem}
+#chat-status{font-size:.75rem;color:#8b95a7;margin-top:6px;min-height:1em}
+</style>
 </head>
 <body>
+<h1>🏠 NAIJA HOUSEMATES</h1>
 
-    <header>
-        <h1>👁️ NAIJA HOUSEMATES</h1>
-        <div class="live-tag">🔴 SEASON 1 LIVE</div>
-    </header>
+<div class="panel">
+  <div class="stat"><div class="top"><span>👑 CLOUT</span><span id="v-clout">500</span></div><div class="track"><div class="fill" id="f-clout"></div></div></div>
+  <div class="stat"><div class="top"><span>⚡ STAMINA</span><span id="v-stamina">100%</span></div><div class="track"><div class="fill" id="f-stamina"></div></div></div>
+  <div class="stat"><div class="top"><span>😰 PARANOIA</span><span id="v-paranoia">15%</span></div><div class="track"><div class="fill" id="f-paranoia"></div></div></div>
+</div>
 
-    <main>
-        <section>
-            <div class="profile-row">
-                <div class="avatar">C1</div>
-                <div>
-                    <h3 style="font-weight: bold;">Chidi (Cruise Master)</h3>
-                    <p style="font-size: 11px; color: #9ca3af;">Status: <span style="color: #4ade80; font-weight: bold;">Active</span></p>
-                </div>
-            </div>
-            <div class="stat-group">
-                <div class="stat-header"><span class="c-clout">🔥 CLOUT</span><span id="stat-clout">500</span></div>
-                <div class="stat-bar-bg"><div id="bar-clout" class="stat-bar-fill bg-clout" style="width: 50%;"></div></div>
-            </div>
-            <div class="stat-group">
-                <div class="stat-header"><span class="c-stamina">⚡ STAMINA</span><span id="stat-stamina">100%</span></div>
-                <div class="stat-bar-bg"><div id="bar-stamina" class="stat-bar-fill bg-stamina" style="width: 100%;"></div></div>
-            </div>
-        </section>
+<div class="panel">
+  <p class="label">HOUSE ACTIONS</p>
+  <div class="actions">
+    <button id="b-task">🧹<br>Daily Task</button>
+    <button id="b-arena">🏆<br>Arena Game</button>
+    <button id="b-diary">🚪<br>Diary Room</button>
+  </div>
+  <p class="label" style="margin-top:14px">LIVE HOUSE FEED</p>
+  <div id="feed"><div>[BIGGIE]: Welcome to the house. No loose guarding o!</div></div>
+</div>
 
-        <section>
-            <h4 style="font-size: 11px; color: #9ca3af; text-transform: uppercase;">House Actions</h4>
-            <div class="actions-grid">
-                <div class="btn" onclick="handleAction('task')"><span>🧹</span><p>Daily Task</p></div>
-                <div class="btn btn-arena" onclick="handleAction('arena')"><span>🏆</span><p>Arena Game</p></div>
-                <div class="btn btn-diary" onclick="handleAction('diary')"><span>🚪</span><p>Diary Room</p></div>
-            </div>
+<div class="panel chat">
+  <h2>💬 GLOBAL FAN CHAT ROOM</h2>
+  <input id="name" maxlength="20" placeholder="Your name">
+  <div id="chat-container"></div>
+  <div class="send">
+    <input id="chat-input" maxlength="200" placeholder="Type message...">
+    <button id="send-btn">Send</button>
+  </div>
+  <div id="chat-status"></div>
+</div>
 
-            <div class="feed-box">
-                <h4 style="font-size: 11px; color: #9ca3af; text-transform: uppercase; margin-bottom: 6px;">Live House Feed</h4>
-                <div id="feed-container" class="feed-container">
-                    <div class="feed-line" style="color: #f59e0b; font-weight: bold;">[BIGGIE]: Welcome to the house. No loose guarding o!</div>
-                </div>
-            </div>
+<script>
+const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
+const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+const HDR = {
+  'apikey': SUB_KEY,
+  'Authorization': `Bearer ${SUB_KEY}`,
+  'Content-Type': 'application/json'
+};
 
-            <!-- Chat Room Layout -->
-            <div class="chat-box">
-                <h4 style="font-size: 11px; color: #f59e0b; text-transform: uppercase; margin-bottom: 4px;">💬 Global Fan Chat Room</h4>
-                <div id="chat-container" class="chat-messages"></div>
-                <div class="chat-input-row">
-                    <input id="chat-msg-input" type="text" placeholder="Type your banter here...">
-                    <button class="btn-send" onclick="sendGlobalMessage()">Send</button>
-                </div>
-            </div>
-        </section>
-    </main>
+// ---- Game stats (local) ----
+let clout = 500, stamina = 100, paranoia = 15;
+const $ = id => document.getElementById(id);
+const clamp = n => Math.max(0, Math.min(100, n));
 
-    <script>
-        let clout = 500; let stamina = 100;
-        
-        const SUB_URL = "https://agxbdnogjbzzgnygrxy.supabase.co";
-        const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+function renderStats() {
+  $('v-clout').textContent = clout;
+  $('v-stamina').textContent = stamina + '%';
+  $('v-paranoia').textContent = paranoia + '%';
+  $('f-clout').style.width = Math.min(100, clout / 10) + '%';
+  $('f-stamina').style.width = stamina + '%';
+  $('f-paranoia').style.width = paranoia + '%';
+}
+function feed(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  $('feed').appendChild(d);
+  $('feed').scrollTop = $('feed').scrollHeight;
+}
+$('b-task').onclick = () => {
+  if (stamina < 10) return feed('[BIGGIE]: You too tire. Rest small!');
+  stamina = clamp(stamina - 10); clout += 20;
+  feed('[BIGGIE]: Daily task done. +20 clout.');
+  renderStats();
+};
+$('b-arena').onclick = () => {
+  if (stamina < 20) return feed('[BIGGIE]: No strength for arena today.');
+  stamina = clamp(stamina - 20);
+  if (Math.random() > 0.5) { clout += 60; feed('[BIGGIE]: You won the arena! +60 clout.'); }
+  else { paranoia = clamp(paranoia + 8); feed('[BIGGIE]: You lost o! Paranoia up.'); }
+  renderStats();
+};
+$('b-diary').onclick = () => {
+  paranoia = clamp(paranoia - 10); stamina = clamp(stamina + 5);
+  feed('[BIGGIE]: Diary room done. You feel lighter.');
+  renderStats();
+};
+renderStats();
 
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchChatMessages();
-            setInterval(fetchChatMessages, 2500); // Check for new messages from cloud every 2.5 seconds
-        });
+// ---- Global fan chat (Supabase) ----
+try { $('name').value = localStorage.getItem('nh_name') || ''; } catch (e) {}
 
-        async function fetchChatMessages() {
-            try {
-                const response = await fetch(`${SUB_URL}/rest/v1/house_chats?order=created_at.desc&limit=20`, {
-                    headers: { 'apikey': SUB_KEY, 'Authorization': `Bearer ${SUB_KEY}` }
-                });
-                const data = await response.json();
-                const container = document.getElementById("chat-container");
-                if (!Array.isArray(data)) return;
-                
-                container.innerHTML = "";
-                data.reverse().forEach(msg => {
-                    container.innerHTML += `<div style="padding:3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color:#f59e0b;">${msg.sender || 'Anonymous'}:</strong> ${msg.message}</div>`;
-                });
-                container.scrollTop = container.scrollHeight;
-            } catch(e) { console.log("Chat sync pause..."); }
-        }
+async function fetchChatMessages() {
+  try {
+    const r = await fetch(
+      `${SUB_URL}/rest/v1/house_chats?select=sender,message&order=created_at.desc&limit=20`,
+      { headers: HDR }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data)) {
+      $('chat-status').textContent = 'Load error: ' + (data.message || r.status);
+      return;
+    }
+    const box = $('chat-container');
+    box.innerHTML = '';
+    data.reverse().forEach(m => {
+      const row = document.createElement('div');
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = m.sender + ': ';
+      row.appendChild(who);
+      row.appendChild(document.createTextNode(m.message));
+      box.appendChild(row);
+    });
+    box.scrollTop = box.scrollHeight;
+    $('chat-status').textContent = 'Live • connected';
+  } catch (e) {
+    $('chat-status').textContent = 'Cannot reach Supabase: ' + e.message;
+  }
+}
 
-        async function sendGlobalMessage() {
-            const input = document.getElementById("chat-msg-input");
-            const text = input.value.trim();
-            if(!text) return;
+async function sendChatMessage() {
+  const input = $('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const name = $('name').value.trim() || 'Fan';
+  try { localStorage.setItem('nh_name', name); } catch (e) {}
+  $('send-btn').disabled = true;
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/house_chats`, {
+      method: 'POST',
+      headers: { ...HDR, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ sender: name, message: text })
+    });
+    if (!r.ok) {
+      alert('Send failed ' + r.status + ': ' + await r.text());
+    } else {
+      input.value = '';
+      fetchChatMessages();
+    }
+  } catch (e) {
+    alert('Cannot reach Supabase: ' + e.message);
+  }
+  $('send-btn').disabled = false;
+}
 
-            try {
-                // Modified explicit native post layout to talk seamlessly with your database
-                const response = await fetch(`${SUB_URL}/rest/v1/house_chats`, {
-                    method: 'POST',
-                    headers: { 
-                        'apikey': SUB_KEY, 
-                        'Authorization': `Bearer ${SUB_KEY}`, 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ sender: 'Chidi', message: text })
-                });
-                
-                input.value = "";
-                fetchChatMessages(); // Trigger direct screen reload refresh
-            } catch(e) { 
-                alert("Network communication error!"); 
-            }
-        }
-
-        function updateUI() {
-            document.getElementById("stat-clout").innerText = clout;
-            document.getElementById("bar-clout").style.width = `${Math.min(clout / 10, 100)}%`;
-            document.getElementById("stat-stamina").innerText = `${stamina}%`;
-            document.getElementById("bar-stamina").style.width = `${stamina}%`;
-        }
-
-        function handleAction(type) {
-            if (stamina <= 0 && type !== 'diary') { logMessage("❌ SYSTEM", "You are completely exhausted!", "#f87171"); return; }
-            if(type === 'task') { stamina -= 20; clout += 45; logMessage("🧠 YOU", "You cleaned the lounge. (+45 Clout)", "#22d3ee"); }
-            if(type === 'arena') { stamina -= 35; clout += 100; logMessage("🎉 ARENA", "You won the minigame! (+100 Clout)", "#f59e0b"); }
-            if(type === 'diary') { logMessage("👁️ BIGGIE", '"The viewers are watching you."', "#c084fc"); }
-            updateUI();
-        }
-
-        function logMessage(sender, text, color = "#d1d5db") {
-            const feed = document.getElementById("feed-container");
-            feed.innerHTML += `<div class="feed-line" style="color:${color}"><span style="opacity:0.6;">[${sender}]:</span> ${text}</div>`;
-            feed.scrollTop = feed.scrollHeight;
-        }
-    </script>
+$('send-btn').onclick = sendChatMessage;
+$('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+fetchChatMessages();
+setInterval(fetchChatMessages, 5000);
+</script>
 </body>
 </html>
