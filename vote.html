@@ -1,189 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vote to Save - Naija Housemates</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background-color: #0b0c10; 
-            color: #f3f4f6; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: screen;
-        }
-        
-        .vote-card {
-            background: #111827;
-            border: 1px solid #1f2937;
-            padding: 20px;
-            border-radius: 16px;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            margin-top: 20px;
-        }
-
-        h1 { color: #f59e0b; font-size: 1.4rem; font-weight: 900; margin-bottom: 6px; }
-        .subtitle { font-size: 12px; color: #9ca3af; uppercase; tracking-wider; margin-bottom: 20px; }
-        
-        .nominee-box {
-            background: rgba(31, 41, 55, 0.5);
-            border: 1px solid #1f2937;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: border 0.2s;
-        }
-        .nominee-box:hover { border-color: #f59e0b; }
-        
-        .nominee-info { display: flex; items-center; gap: 12px; text-align: left; }
-        .initials {
-            width: 38px;
-            height: 38px;
-            background: #374151;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .vote-btn {
-            background: #f59e0b;
-            color: black;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            active: scale-95;
-        }
-        .vote-btn:disabled {
-            background: #4b5563;
-            color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .share-section {
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid #1f2937;
-        }
-        .share-btn {
-            background: #2563eb;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        .vote-ticker { font-size: 11px; color: #10b981; font-weight: bold; margin-top: 4px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evict a Housemate</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#0a0b10;color:#fff;font-family:system-ui,sans-serif}
+h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
+.sub{text-align:center;font-size:.8rem;color:#8b95a7;margin-bottom:6px}
+#status{text-align:center;font-size:.8rem;color:#9aa;min-height:1.2em;margin-bottom:6px}
+.card{background:#111827;border:1px solid #1f2a3d;border-radius:14px;padding:12px;margin:10px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.name{font-weight:700;font-size:1rem}
+.role{font-size:.78rem;color:#f59e0b;margin-top:2px}
+.cnt{font-size:.8rem;color:#ccd;margin-top:4px}
+.bar{height:8px;background:#1f2937;border-radius:4px;margin-top:10px;overflow:hidden}
+.fill{height:100%;background:#e63946;width:0;transition:width .4s}
+button{background:#e63946;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:.95rem;font-weight:700;min-width:84px}
+button:disabled{opacity:.5}
+</style>
 </head>
 <body>
+<h1>🗳️ FAN EVICTION VOTE</h1>
+<div class="sub">Tap Evict to vote out your least favourite AI housemate</div>
+<div id="status">Loading...</div>
+<div id="list"></div>
 
-    <div class="vote-card">
-        <h1>👁️ NAIJA HOUSEMATES</h1>
-        <p class="subtitle">🚨 WEEK 1 LIVE EVICTION VOTING</p>
-        
-        <p style="font-size: 13px; margin-bottom: 16px; color: #e5e7eb;">Select a housemate to <strong>SAVE</strong> from eviction. You have <span id="votes-left" style="color: #22d3ee; font-weight: bold;">1</span> free vote left today.</p>
+<script>
+const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
+const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+const HDR = {
+  'apikey': SUB_KEY,
+  'Authorization': `Bearer ${SUB_KEY}`,
+  'Content-Type': 'application/json'
+};
+const list = document.getElementById('list');
+const statusEl = document.getElementById('status');
+let busy = false;
 
-        <!-- Nominees Container -->
-        <div id="nominees-container">
-            <!-- Nominee 1 -->
-            <div class="nominee-box">
-                <div class="nominee-info">
-                    <div class="initials" style="background: #b45309; color: white;">C1</div>
-                    <div>
-                        <h4 style="font-weight: bold; font-size: 14px;">Chidi (You)</h4>
-                        <p class="vote-ticker" id="votes-chidi">1,420 votes</p>
-                    </div>
-                </div>
-                <button class="vote-btn" onclick="castVote('chidi')">VOTE</button>
-            </div>
+async function loadVotes() {
+  try {
+    const r = await fetch(
+      `${SUB_URL}/rest/v1/votes?select=candidate_name,role,vote_count&order=vote_count.desc`,
+      { headers: HDR }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data)) {
+      statusEl.textContent = 'Load error: ' + (data.message || r.status);
+      return;
+    }
+    const total = data.reduce((s, v) => s + v.vote_count, 0) || 1;
+    list.innerHTML = '';
+    data.forEach(v => {
+      const pct = Math.round((v.vote_count / total) * 100);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<div class="row"><div>' +
+        '<div class="name"></div><div class="role"></div><div class="cnt"></div>' +
+        '</div><button>Evict</button></div>' +
+        '<div class="bar"><div class="fill"></div></div>';
+      card.querySelector('.name').textContent = v.candidate_name;
+      card.querySelector('.role').textContent = v.role || '';
+      card.querySelector('.cnt').textContent = v.vote_count + ' votes (' + pct + '%)';
+      card.querySelector('.fill').style.width = pct + '%';
+      const btn = card.querySelector('button');
+      btn.disabled = busy;
+      btn.onclick = () => castVote(v.candidate_name);
+      list.appendChild(card);
+    });
+    if (!busy) statusEl.textContent = 'Live • updates every 10s';
+  } catch (e) {
+    statusEl.textContent = 'Cannot reach Supabase: ' + e.message;
+  }
+}
 
-            <!-- Nominee 2 -->
-            <div class="nominee-box">
-                <div class="nominee-info">
-                    <div class="initials">MG</div>
-                    <div>
-                        <h4 style="font-weight: bold; font-size: 14px;">Mama G (AI)</h4>
-                        <p class="vote-ticker" id="votes-mamag">2,850 votes</p>
-                    </div>
-                </div>
-                <button class="vote-btn" onclick="castVote('mamag')">VOTE</button>
-            </div>
+async function castVote(name) {
+  if (busy) return;
+  busy = true;
+  document.querySelectorAll('button').forEach(b => b.disabled = true);
+  statusEl.textContent = 'Sending vote...';
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/increment_vote`, {
+      method: 'POST',
+      headers: HDR,
+      body: JSON.stringify({ cand: name })
+    });
+    if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+    statusEl.textContent = '✅ Vote counted against ' + name;
+  } catch (e) {
+    statusEl.textContent = '❌ Vote failed: ' + e.message;
+  }
+  setTimeout(() => { busy = false; loadVotes(); }, 1500);
+  loadVotes();
+}
 
-            <!-- Nominee 3 -->
-            <div class="nominee-box">
-                <div class="nominee-info">
-                    <div class="initials">RK</div>
-                    <div>
-                        <h4 style="font-weight: bold; font-size: 14px;">Rich Kid (AI)</h4>
-                        <p class="vote-ticker" id="votes-richkid">980 votes</p>
-                    </div>
-                </div>
-                <button class="vote-btn" onclick="castVote('richkid')">VOTE</button>
-            </div>
-        </div>
-
-        <!-- Viral Share Loop Component -->
-        <div class="share-section">
-            <p style="font-size: 12px; color: #9ca3af;">Want your person to survive? Campaign for them!</p>
-            <button class="share-btn" onclick="copyCampaignText()">📋 Copy Viral Campaign Link</button>
-        </div>
-    </div>
-
-    <script>
-        let freeVotesLeft = 1;
-        let votes = { chidi: 1420, mamag: 2850, richkid: 980 };
-
-        function castVote(candidate) {
-            if (freeVotesLeft <= 0) {
-                alert("You have exhausted your free vote for today! Check back tomorrow.");
-                return;
-            }
-            
-            // Increment logic simulation
-            votes[candidate]++;
-            freeVotesLeft--;
-            
-            // UI Updates
-            document.getElementById("votes-left").innerText = freeVotesLeft;
-            document.getElementById(`votes-${candidate}`).innerText = `${votes[candidate].toLocaleString()} votes`;
-            
-            // Disable all buttons after voting
-            const buttons = document.querySelectorAll('.vote-btn');
-            buttons.forEach(btn => btn.disabled = true);
-            
-            alert(`🎉 Success! Your vote to SAVE ${candidate === 'chidi' ? 'Chidi' : candidate === 'mamag' ? 'Mama G' : 'Rich Kid'} has been recorded!`);
-        }
-
-        function copyCampaignText() {
-            const textToCopy = "🚨 NAIJA HOUSEMATES EVICTION! Chidi is in danger of leaving Biggie's house this Sunday! Click here to cast your free vote to SAVE Chidi now: [://yourgamelink.com]";
-            
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                alert("🚀 Campaign message copied to your clipboard! Go paste it on WhatsApp, X (Twitter), or TikTok to pool votes!");
-            }).catch(err => {
-                alert("Oops, error copying link. Try manual selection!");
-            });
-        }
-    </script>
+loadVotes();
+setInterval(loadVotes, 10000);
+</script>
 </body>
 </html>
