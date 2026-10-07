@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Join Naija Housemates</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#0a0b10;color:#fff;font-family:system-ui,sans-serif}
+.back{display:inline-block;margin-bottom:6px;padding:8px 12px;border-radius:10px;background:#1f2937;color:#fff;font-size:.85rem;font-weight:700;text-decoration:none}
+h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
+.sub{text-align:center;font-size:.8rem;color:#8b95a7;margin-bottom:12px}
+.panel{background:#111827;border:1px solid #1f2a3d;border-radius:16px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.8rem;font-weight:700;color:#8b95a7;margin:0 0 6px}
+input,textarea{width:100%;background:#08090d;color:#fff;border:1px solid #2a3550;border-radius:10px;padding:12px;font-size:1rem;font-family:inherit;margin-bottom:10px}
+textarea{height:110px;resize:none}
+.count{text-align:right;font-size:.75rem;color:#8b95a7;margin:-6px 0 10px}
+.btn{width:100%;background:#f59e0b;color:#000;font-weight:700;border:0;border-radius:12px;padding:14px;font-size:1rem}
+.btn:disabled{opacity:.5}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;padding:10px;border:0;border-radius:10px;background:#1f2937;color:#fff;font-weight:700;font-size:.9rem}
+.tab.on{background:#f59e0b;color:#000}
+.msg{text-align:center;font-size:.9rem;min-height:1.2em;margin-top:10px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.8rem;color:#8b95a7;margin-bottom:12px}
+.bar b{color:#fff;word-break:break-all}
+.out{background:#1f2937;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:700;font-size:.8rem}
+.app{border-bottom:1px solid #1f2a3d;padding:10px 0}
+.app:last-child{border-bottom:0}
+.app .n{font-weight:700}
+.app .p{font-size:.85rem;color:#ccd;margin-top:2px;word-break:break-word}
+.app .v{font-size:.75rem;color:#f59e0b;margin-top:3px}
+h2{font-size:1rem;color:#f59e0b;margin:0 0 8px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<a class="back" href="/">← Back to House</a>
+<h1>🎤 JOIN THE AUDITIONS</h1>
+<div class="sub">Win votes, earn clout, and fight for one of 20 house spots</div>
+
+<div class="panel" id="auth-panel">
+  <div class="tabs">
+    <button class="tab on" id="t-login">Log in</button>
+    <button class="tab" id="t-signup">Sign up</button>
+  </div>
+  <label for="email">EMAIL</label>
+  <input id="email" type="email" autocomplete="email" placeholder="you@email.com">
+  <label for="pass">PASSWORD (min 6 characters)</label>
+  <input id="pass" type="password" autocomplete="current-password" placeholder="Password">
+  <button class="btn" id="auth-btn">Log in</button>
+  <div class="msg" id="auth-msg"></div>
+</div>
+
+<div class="panel hide" id="account-panel">
+  <div class="bar"><span>Logged in as <b id="who"></b></span><button class="out" id="logout">Log out</button></div>
+  <div id="form-area">
+    <label for="uname">YOUR HOUSEMATE NAME (3-20 letters)</label>
+    <input id="uname" maxlength="20" placeholder="e.g. Chioma Blaze">
+    <label for="bio">YOUR AUDITION PITCH</label>
+    <textarea id="bio" maxlength="280" placeholder="Tell the fans why they should pick you..."></textarea>
+    <div class="count"><span id="cc">0</span>/280</div>
+    <button class="btn" id="join-btn">Submit Audition</button>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div id="joined-area" class="hide" style="text-align:center">
+    <div style="font-size:2rem">✅</div>
+    <div style="font-weight:700;margin:6px 0" id="joined-text"></div>
+    <div style="font-size:.85rem;color:#8b95a7">Your audition is in. Share this page and get fans to back you!</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📋 Current Auditions</h2>
+  <div id="apps">Loading...</div>
+</div>
+
+<script>
+const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
+const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+const BASE = { 'apikey': SUB_KEY, 'Content-Type': 'application/json' };
+const PUBHDR = { ...BASE, 'Authorization': `Bearer ${SUB_KEY}` };
+const $ = id => document.getElementById(id);
+
+let session = null;
+let mode = 'login';
+
+function loadSession() {
+  try { session = JSON.parse(localStorage.getItem('nh_session') || 'null'); } catch (e) { session = null; }
+}
+function saveSession(s) {
+  session = s;
+  try { s ? localStorage.setItem('nh_session', JSON.stringify(s)) : localStorage.removeItem('nh_session'); } catch (e) {}
+}
+function toSession(d, email) {
+  return {
+    access_token: d.access_token,
+    refresh_token: d.refresh_token,
+    expires_at: Math.floor(Date.now() / 1000) + (d.expires_in || 3600),
+    email: (d.user && d.user.email) || email
+  };
+}
+async function authCall(path, body) {
+  const r = await fetch(SUB_URL + path, { method: 'POST', headers: BASE, body: JSON.stringify(body) });
+  let d = {};
+  try { d = await r.json(); } catch (e) {}
+  return { ok: r.ok, d };
+}
+async function ensureFresh() {
+  if (!session) return false;
+  if (session.expires_at - 60 > Date.now() / 1000) return true;
+  const { ok, d } = await authCall('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+  if (ok && d.access_token) { saveSession(toSession(d, session.email)); return true; }
+  saveSession(null);
+  return false;
+}
+function userHdr() { return { ...BASE, 'Authorization': 'Bearer ' + session.access_token }; }
+
+function setMode(m) {
+  mode = m;
+  $('t-login').className = 'tab' + (m === 'login' ? ' on' : '');
+  $('t-signup').className = 'tab' + (m === 'signup' ? ' on' : '');
+  $('auth-btn').textContent = m === 'login' ? 'Log in' : 'Create account';
+  $('pass').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  $('auth-msg').textContent = '';
+}
+$('t-login').onclick = () => setMode('login');
+$('t-signup').onclick = () => setMode('signup');
+
+$('auth-btn').onclick = async () => {
+  const email = $('email').value.trim();
+  const password = $('pass').value;
+  if (!email || password.length < 6) { $('auth-msg').textContent = '⚠️ Enter your email and a password of 6+ characters.'; return; }
+  $('auth-btn').disabled = true;
+  $('auth-msg').textContent = 'Please wait...';
+  try {
+    const path = mode === 'login' ? '/auth/v1/token?grant_type=password' : '/auth/v1/signup';
+    const { ok, d } = await authCall(path, { email, password });
+    if (ok && d.access_token) {
+      saveSession(toSession(d, email));
+      $('pass').value = '';
+      await render();
+    } else if (ok && mode === 'signup') {
+      $('auth-msg').textContent = '📧 Account created. Check your email to confirm, then log in.';
+    } else {
+      $('auth-msg').textContent = '❌ ' + (d.msg || d.error_description || d.message || 'Failed. Try again.');
+    }
+  } catch (e) {
+    $('auth-msg').textContent = '❌ Cannot reach server: ' + e.message;
+  }
+  $('auth-btn').disabled = false;
+};
+
+$('logout').onclick = () => { saveSession(null); render(); };
+$('bio').addEventListener('input', () => { $('cc').textContent = $('bio').value.length; });
+
+async function render() {
+  const ok = await ensureFresh();
+  $('auth-panel').className = ok ? 'panel hide' : 'panel';
+  $('account-panel').className = ok ? 'panel' : 'panel hide';
+  if (!ok) return;
+  $('who').textContent = session.email || '';
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/my_application`, {
+      method: 'POST', headers: userHdr(), body: '{}'
+    });
+    if (r.status === 401) { saveSession(null); render(); return; }
+    const mine = await r.json();
+    if (typeof mine === 'string' && mine) {
+      $('form-area').className = 'hide';
+      $('joined-area').className = '';
+      $('joined-text').textContent = "You're in the auditions, " + mine + "!";
+    } else {
+      $('form-area').className = '';
+      $('joined-area').className = 'hide';
+    }
+  } catch (e) {}
+}
+
+async function loadApps() {
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/get_applicants`, { method: 'POST', headers: PUBHDR, body: '{}' });
+    const data = await r.json();
+    if (!Array.isArray(data)) { $('apps').textContent = 'Load error: ' + (data.message || r.status); return; }
+    if (!data.length) { $('apps').textContent = 'No auditions yet. Be the first!'; return; }
+    $('apps').innerHTML = '';
+    data.forEach((a, i) => {
+      const d = document.createElement('div');
+      d.className = 'app';
+      d.innerHTML = '<div class="n"></div><div class="p"></div><div class="v"></div>';
+      d.querySelector('.n').textContent = (i + 1) + '. ' + a.username;
+      d.querySelector('.p').textContent = a.pitch;
+      d.querySelector('.v').textContent = a.pitch_votes + ' pitch votes';
+      $('apps').appendChild(d);
+    });
+  } catch (e) {
+    $('apps').textContent = 'Cannot reach Supabase: ' + e.message;
+  }
+}
+
+const MSGS = {
+  already: '⚠️ You already submitted an audition.',
+  name_taken: '⚠️ That name is taken. Try another one.',
+  bad_name: '⚠️ Name must be 3-20 characters.',
+  bad_pitch: '⚠️ Pitch must be 10-280 characters.',
+  login_required: '⚠️ Please log in again.'
+};
+
+$('join-btn').onclick = async () => {
+  if (!(await ensureFresh())) { render(); return; }
+  $('join-btn').disabled = true;
+  $('msg').textContent = 'Submitting...';
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/join_game`, {
+      method: 'POST', headers: userHdr(),
+      body: JSON.stringify({ uname: $('uname').value.trim(), bio: $('bio').value.trim() })
+    });
+    if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+    const res = await r.json();
+    if (res === 'ok') { $('msg').textContent = ''; await render(); loadApps(); $('join-btn').disabled = false; return; }
+    $('msg').textContent = MSGS[res] || ('❌ Rejected (' + res + ')');
+  } catch (e) {
+    $('msg').textContent = '❌ Failed: ' + e.message;
+  }
+  $('join-btn').disabled = false;
+};
+
+loadSession();
+render();
+loadApps();
+setInterval(loadApps, 15000);
+</script>
+</body>
+</html>
