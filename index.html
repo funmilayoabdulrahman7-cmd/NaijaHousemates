@@ -20,17 +20,16 @@
         .stat-bar-fill { height: 100%; transition: width 0.3s ease; }
         .c-clout { color: #f59e0b; } .bg-clout { background: #f59e0b; }
         .c-stamina { color: #22d3ee; } .bg-stamina { background: #22d3ee; }
-        .c-paranoia { color: #c084fc; } .bg-paranoia { background: #c084fc; }
         .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;}
         .btn { background: #1f2937; border: 1px solid #374151; color: white; padding: 12px 4px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-arena { background: #d97706; color: #000; border: none; }
         .btn-diary { background: rgba(88, 28, 135, 0.6); border: 1px solid rgba(147, 51, 234, 0.4); }
-        .feed-box { height: 180px; display: flex; flex-direction: column; margin-top: 12px;}
-        .feed-container { background: #0b0c10; border: 1px solid #1f2937; padding: 10px; border-radius: 8px; overflow-y: auto; font-family: monospace; font-size: 12px; height: 140px; }
+        .feed-box { height: 140px; display: flex; flex-direction: column; margin-top: 12px;}
+        .feed-container { background: #0b0c10; border: 1px solid #1f2937; padding: 10px; border-radius: 8px; overflow-y: auto; font-family: monospace; font-size: 12px; height: 100px; }
         .feed-line { padding: 4px 0; border-bottom: 1px solid rgba(31, 41, 55, 0.3); }
         
-        /* 💬 Global Live Chat UI styling layout */
-        .chat-box { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 12px; margin-top: 12px; display: flex; flex-direction: column; height: 260px; }
+        /* 💬 Chat Box styles */
+        .chat-box { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 12px; margin-top: 12px; display: flex; flex-direction: column; height: 280px; }
         .chat-messages { flex: 1; background: #0b0c10; border-radius: 8px; padding: 8px; overflow-y: auto; font-size: 12px; margin-bottom: 8px; }
         .chat-input-row { display: flex; gap: 6px; }
         .chat-input-row input { background: #0b0c10; border: 1px solid #4b5563; color: white; padding: 8px; border-radius: 6px; flex: 1; font-size: 12px; }
@@ -78,7 +77,7 @@
                 </div>
             </div>
 
-            <!-- 💬 Live Multiplayer Chat Box Panel Layout -->
+            <!-- Chat Room Layout -->
             <div class="chat-box">
                 <h4 style="font-size: 11px; color: #f59e0b; text-transform: uppercase; margin-bottom: 4px;">💬 Global Fan Chat Room</h4>
                 <div id="chat-container" class="chat-messages"></div>
@@ -91,30 +90,31 @@
     </main>
 
     <script>
-        let clout = 500; let stamina = 100; let paranoia = 15;
+        let clout = 500; let stamina = 100;
         
-        // 🔑 Hooked directly to your specific live database credentials
-        const SUB_URL = "https://supabase.co";
+        const SUB_URL = "https://agxbdnogjbzzgnygrxy.supabase.co";
         const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
 
         document.addEventListener("DOMContentLoaded", () => {
             fetchChatMessages();
-            setInterval(fetchChatMessages, 3000); // Poll fresh updates from cloud every 3 seconds
+            setInterval(fetchChatMessages, 2500); // Check for new messages from cloud every 2.5 seconds
         });
 
         async function fetchChatMessages() {
             try {
-                const response = await fetch(`${SUB_URL}/rest/v1/house_chats?order=created_at.desc&limit=15`, {
+                const response = await fetch(`${SUB_URL}/rest/v1/house_chats?order=created_at.desc&limit=20`, {
                     headers: { 'apikey': SUB_KEY, 'Authorization': `Bearer ${SUB_KEY}` }
                 });
                 const data = await response.json();
                 const container = document.getElementById("chat-container");
+                if (!Array.isArray(data)) return;
+                
                 container.innerHTML = "";
                 data.reverse().forEach(msg => {
-                    container.innerHTML += `<div style="padding:3px 0;"><strong style="color:#f59e0b;">${msg.sender}:</strong> ${msg.message}</div>`;
+                    container.innerHTML += `<div style="padding:3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color:#f59e0b;">${msg.sender || 'Anonymous'}:</strong> ${msg.message}</div>`;
                 });
                 container.scrollTop = container.scrollHeight;
-            } catch(e) { console.log("Chat sync timeout"); }
+            } catch(e) { console.log("Chat sync pause..."); }
         }
 
         async function sendGlobalMessage() {
@@ -123,21 +123,21 @@
             if(!text) return;
 
             try {
-                // We add the direct verification headers inside the fetch method parameters
-                await fetch(`${SUB_URL}/rest/v1/house_chats`, {
+                // Modified explicit native post layout to talk seamlessly with your database
+                const response = await fetch(`${SUB_URL}/rest/v1/house_chats`, {
                     method: 'POST',
                     headers: { 
                         'apikey': SUB_KEY, 
                         'Authorization': `Bearer ${SUB_KEY}`, 
-                        'Content-Type': 'application/json', 
-                        'Prefer': 'return=minimal' 
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ sender: 'Chidi', message: text })
                 });
+                
                 input.value = "";
-                fetchChatMessages(); // Instantly update view log panel arrays
+                fetchChatMessages(); // Trigger direct screen reload refresh
             } catch(e) { 
-                alert("Message failed to send o!"); 
+                alert("Network communication error!"); 
             }
         }
 
