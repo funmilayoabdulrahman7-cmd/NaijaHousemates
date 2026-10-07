@@ -29,7 +29,7 @@
         .feed-container { background: #0b0c10; border: 1px solid #1f2937; padding: 10px; border-radius: 8px; overflow-y: auto; font-family: monospace; font-size: 12px; height: 140px; }
         .feed-line { padding: 4px 0; border-bottom: 1px solid rgba(31, 41, 55, 0.3); }
         
-        /* 💬 New Global Live Chat Component Interface */
+        /* 💬 Global Live Chat UI styling layout */
         .chat-box { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 12px; margin-top: 12px; display: flex; flex-direction: column; height: 260px; }
         .chat-messages { flex: 1; background: #0b0c10; border-radius: 8px; padding: 8px; overflow-y: auto; font-size: 12px; margin-bottom: 8px; }
         .chat-input-row { display: flex; gap: 6px; }
@@ -123,14 +123,22 @@
             if(!text) return;
 
             try {
+                // We add the direct verification headers inside the fetch method parameters
                 await fetch(`${SUB_URL}/rest/v1/house_chats`, {
                     method: 'POST',
-                    headers: { 'apikey': SUB_KEY, 'Authorization': `Bearer ${SUB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                    headers: { 
+                        'apikey': SUB_KEY, 
+                        'Authorization': `Bearer ${SUB_KEY}`, 
+                        'Content-Type': 'application/json', 
+                        'Prefer': 'return=minimal' 
+                    },
                     body: JSON.stringify({ sender: 'Chidi', message: text })
                 });
                 input.value = "";
-                fetchChatMessages();
-            } catch(e) { alert("Message failed to send o!"); }
+                fetchChatMessages(); // Instantly update view log panel arrays
+            } catch(e) { 
+                alert("Message failed to send o!"); 
+            }
         }
 
         function updateUI() {
