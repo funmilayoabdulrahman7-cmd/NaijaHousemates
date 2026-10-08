@@ -10,6 +10,9 @@ body{margin:0;padding:16px;background:#0a0b10;color:#fff;font-family:system-ui,s
 .back{display:inline-block;margin-bottom:6px;padding:8px 12px;border-radius:10px;background:#1f2937;color:#fff;font-size:.85rem;font-weight:700;text-decoration:none}
 h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
 .sub{text-align:center;font-size:.8rem;color:#8b95a7;margin-bottom:6px}
+.note{background:#1f2937;border-radius:12px;padding:10px;text-align:center;font-size:.85rem;margin:8px 0}
+.note a{color:#f59e0b;font-weight:700}
+.hide{display:none}
 #status{text-align:center;font-size:.85rem;color:#9aa;min-height:1.2em;margin-bottom:6px}
 .card{background:#111827;border:1px solid #1f2a3d;border-radius:14px;padding:12px;margin:10px 0}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -18,14 +21,16 @@ h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
 .cnt{font-size:.8rem;color:#ccd;margin-top:4px}
 .bar{height:8px;background:#1f2937;border-radius:4px;margin-top:10px;overflow:hidden}
 .fill{height:100%;background:#e63946;width:0;transition:width .4s}
-button{background:#e63946;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:.95rem;font-weight:700;min-width:84px}
-button:disabled{opacity:.4}
+button{background:#e63946;color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:.95rem;font-weight:700;min-width:92px}
+button:disabled{background:#1f2937;color:#8b95a7}
+button.mine:disabled{background:#14532d;color:#fff}
 </style>
 </head>
 <body>
 <a class="back" href="/">← Back to House</a>
 <h1>🗳️ FAN EVICTION VOTE</h1>
-<div class="sub">One vote per person each round</div>
+<div class="sub">One vote per account each round</div>
+<div class="note hide" id="login-note">🔐 <a href="/join">Log in</a> to cast your vote. Results are live below.</div>
 <div id="status">Loading...</div>
 <div id="list"></div>
 
@@ -33,35 +38,65 @@ button:disabled{opacity:.4}
 const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
 const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
 const ROUND = 1; // change to 2, 3... to open a new voting round
-const HDR = {
-  'apikey': SUB_KEY,
-  'Authorization': `Bearer ${SUB_KEY}`,
-  'Content-Type': 'application/json'
-};
-const list = document.getElementById('list');
-const statusEl = document.getElementById('status');
+const BASE = { 'apikey': SUB_KEY, 'Content-Type': 'application/json' };
+const PUBHDR = { ...BASE, 'Authorization': `Bearer ${SUB_KEY}` };
+const $ = id => document.getElementById(id);
+const list = $('list');
+const statusEl = $('status');
+
+let session = null;
+let myVote = '';
 let busy = false;
 
-// ---- voter ID (saved on this phone) ----
-function makeId() {
-  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
-  return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+function loadSession() {
+  try { session = JSON.parse(localStorage.getItem('nh_session') || 'null'); } catch (e) { session = null; }
 }
-let voterId = '';
-try {
-  voterId = localStorage.getItem('nh_voter') || '';
-  if (!voterId) { voterId = makeId(); localStorage.setItem('nh_voter', voterId); }
-} catch (e) { voterId = makeId(); }
+function saveSession(s) {
+  session = s;
+  try { s ? localStorage.setItem('nh_session', JSON.stringify(s)) : localStorage.removeItem('nh_session'); } catch (e) {}
+}
+function toSession(d, email) {
+  return {
+    access_token: d.access_token,
+    refresh_token: d.refresh_token,
+    expires_at: Math.floor(Date.now() / 1000) + (d.expires_in || 3600),
+    email: (d.user && d.user.email) || email
+  };
+}
+async function ensureFresh() {
+  if (!session) return false;
+  if (session.expires_at - 60 > Date.now() / 1000) return true;
+  try {
+    const r = await fetch(SUB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST', headers: BASE, body: JSON.stringify({ refresh_token: session.refresh_token })
+    });
+    const d = await r.json();
+    if (r.ok && d.access_token) { saveSession(toSession(d, session.email)); return true; }
+  } catch (e) {}
+  saveSession(null);
+  return false;
+}
+function userHdr() { return { ...BASE, 'Authorization': 'Bearer ' + session.access_token }; }
 
-const votedKey = 'nh_voted_r' + ROUND;
-function hasVoted() { try { return !!localStorage.getItem(votedKey); } catch (e) { return false; } }
-function markVoted(name) { try { localStorage.setItem(votedKey, name); } catch (e) {} }
+async function loadMine() {
+  myVote = '';
+  if (!session || !(await ensureFresh())) return;
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/my_round_vote`, {
+      method: 'POST', headers: userHdr(), body: JSON.stringify({ rnd: ROUND })
+    });
+    if (r.status === 401) { saveSession(null); return; }
+    if (r.ok) { const v = await r.json(); if (typeof v === 'string' && v) myVote = v; }
+  } catch (e) {}
+}
 
 async function loadVotes() {
+  await loadMine();
+  $('login-note').className = session ? 'note hide' : 'note';
   try {
     const r = await fetch(
       `${SUB_URL}/rest/v1/votes?select=candidate_name,role,vote_count&order=vote_count.desc`,
-      { headers: HDR }
+      { headers: PUBHDR }
     );
     const data = await r.json();
     if (!Array.isArray(data)) {
@@ -69,7 +104,6 @@ async function loadVotes() {
       return;
     }
     const total = data.reduce((s, v) => s + v.vote_count, 0) || 1;
-    const locked = hasVoted();
     list.innerHTML = '';
     data.forEach(v => {
       const pct = Math.round((v.vote_count / total) * 100);
@@ -85,49 +119,51 @@ async function loadVotes() {
       card.querySelector('.cnt').textContent = v.vote_count + ' votes (' + pct + '%)';
       card.querySelector('.fill').style.width = pct + '%';
       const btn = card.querySelector('button');
-      btn.disabled = busy || locked;
-      btn.onclick = () => castVote(v.candidate_name);
+      if (myVote === v.candidate_name) { btn.textContent = '✅ Your vote'; btn.className = 'mine'; btn.disabled = true; }
+      else if (!session || myVote || busy) { btn.disabled = true; }
+      else { btn.onclick = () => castVote(v.candidate_name); }
       list.appendChild(card);
     });
     if (!busy) {
-      statusEl.textContent = locked
-        ? '✅ You voted this round. Live results update every 10s'
-        : 'Live • updates every 10s';
+      statusEl.textContent = !session ? 'Log in to vote • results update every 10s'
+        : myVote ? '✅ You voted this round. Results update every 10s'
+        : 'Live • tap Evict to vote';
     }
   } catch (e) {
     statusEl.textContent = 'Cannot reach Supabase: ' + e.message;
   }
 }
 
+const VMSG = {
+  ok: '✅ Vote counted!',
+  already: '⚠️ You already voted this round.',
+  login_required: '⚠️ Please log in to vote.',
+  unknown: '❌ Housemate not found.'
+};
+
 async function castVote(name) {
-  if (busy || hasVoted()) return;
+  if (busy) return;
+  if (!(await ensureFresh())) { loadVotes(); return; }
   busy = true;
   document.querySelectorAll('button').forEach(b => b.disabled = true);
   statusEl.textContent = 'Sending vote...';
+  let msg = '';
   try {
-    const r = await fetch(`${SUB_URL}/rest/v1/rpc/cast_vote`, {
-      method: 'POST',
-      headers: HDR,
-      body: JSON.stringify({ cand: name, voter: voterId, rnd: ROUND })
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/cast_vote_auth`, {
+      method: 'POST', headers: userHdr(), body: JSON.stringify({ cand: name, rnd: ROUND })
     });
     if (!r.ok) throw new Error(r.status + ' ' + await r.text());
-    const result = await r.json();
-    if (result === 'ok') {
-      markVoted(name);
-      statusEl.textContent = '✅ Vote counted against ' + name;
-    } else if (result === 'already') {
-      markVoted('x');
-      statusEl.textContent = '⚠️ You already voted this round';
-    } else {
-      statusEl.textContent = '❌ Vote rejected (' + result + ')';
-    }
+    const res = await r.json();
+    msg = VMSG[res] || ('❌ Rejected (' + res + ')');
   } catch (e) {
-    statusEl.textContent = '❌ Vote failed: ' + e.message;
+    msg = '❌ Vote failed: ' + e.message;
   }
   busy = false;
-  loadVotes();
+  await loadVotes();
+  statusEl.textContent = msg;
 }
 
+loadSession();
 loadVotes();
 setInterval(loadVotes, 10000);
 </script>
