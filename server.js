@@ -15,6 +15,17 @@ const PAGES = {
   '/qualify.html': 'qualify.html'
 };
 
+const META = {
+  'index.html': ['Naija Housemates 🏠', 'The Naija reality game. Join the house, win votes, survive eviction and fight for a spot. Play free!'],
+  'join.html': ['Audition for Naija Housemates 🎤', 'Submit your pitch, get fans to vote for you and fight for one of 20 house spots.'],
+  'vote.html': ['Fan Eviction Vote 🗳️', 'Who should leave the house this week? Cast your vote now.'],
+  'qualify.html': ['Audition Standings 🏆', 'See who is leading the race for this week house spots.']
+};
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -25,9 +36,26 @@ const server = http.createServer((req, res) => {
   const file = PAGES[route];
 
   if (file) {
-    fs.readFile(path.join(__dirname, file), (err, data) => {
-      if (err) { res.writeHead(500); res.end(file + ' not found'); }
-      else { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(data); }
+    fs.readFile(path.join(__dirname, file), 'utf8', (err, html) => {
+      if (err) { res.writeHead(500); res.end(file + ' not found'); return; }
+      const m = META[file];
+      if (m) {
+        const proto = req.headers['x-forwarded-proto'] || 'https';
+        const url = proto + '://' + (req.headers.host || '') + route;
+        const tags =
+          '<meta name="description" content="' + esc(m[1]) + '">' +
+          '<meta property="og:site_name" content="Naija Housemates">' +
+          '<meta property="og:type" content="website">' +
+          '<meta property="og:title" content="' + esc(m[0]) + '">' +
+          '<meta property="og:description" content="' + esc(m[1]) + '">' +
+          '<meta property="og:url" content="' + esc(url) + '">' +
+          '<meta name="twitter:card" content="summary">' +
+          '<meta name="twitter:title" content="' + esc(m[0]) + '">' +
+          '<meta name="twitter:description" content="' + esc(m[1]) + '">';
+        html = html.replace('</head>', tags + '</head>');
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
     });
   } else {
     res.writeHead(404);
