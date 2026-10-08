@@ -33,6 +33,16 @@ const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
   const route = req.url.split('?')[0];
+
+  if (route === '/preview.png') {
+    fs.readFile(path.join(__dirname, 'preview.png'), (err, img) => {
+      if (err) { res.writeHead(404); res.end('Image not found'); return; }
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+      res.end(img);
+    });
+    return;
+  }
+
   const file = PAGES[route];
 
   if (file) {
@@ -41,7 +51,9 @@ const server = http.createServer((req, res) => {
       const m = META[file];
       if (m) {
         const proto = req.headers['x-forwarded-proto'] || 'https';
-        const url = proto + '://' + (req.headers.host || '') + route;
+        const origin = proto + '://' + (req.headers.host || '');
+        const url = origin + route;
+        const image = origin + '/preview.png';
         const tags =
           '<meta name="description" content="' + esc(m[1]) + '">' +
           '<meta property="og:site_name" content="Naija Housemates">' +
@@ -49,9 +61,13 @@ const server = http.createServer((req, res) => {
           '<meta property="og:title" content="' + esc(m[0]) + '">' +
           '<meta property="og:description" content="' + esc(m[1]) + '">' +
           '<meta property="og:url" content="' + esc(url) + '">' +
-          '<meta name="twitter:card" content="summary">' +
+          '<meta property="og:image" content="' + esc(image) + '">' +
+          '<meta property="og:image:width" content="1200">' +
+          '<meta property="og:image:height" content="630">' +
+          '<meta name="twitter:card" content="summary_large_image">' +
           '<meta name="twitter:title" content="' + esc(m[0]) + '">' +
-          '<meta name="twitter:description" content="' + esc(m[1]) + '">';
+          '<meta name="twitter:description" content="' + esc(m[1]) + '">' +
+          '<meta name="twitter:image" content="' + esc(image) + '">';
         html = html.replace('</head>', tags + '</head>');
       }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
