@@ -10,7 +10,9 @@ const PAGES = {
   '/vote': 'vote.html',
   '/vote.html': 'vote.html',
   '/join': 'join.html',
-  '/join.html': 'join.html'
+  '/join.html': 'join.html',
+  '/qualify': 'qualify.html',
+  '/qualify.html': 'qualify.html'
 };
 
 const server = http.createServer((req, res) => {

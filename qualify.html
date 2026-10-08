@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audition Standings</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#0a0b10;color:#fff;font-family:system-ui,sans-serif}
+.back{display:inline-block;margin-bottom:6px;padding:8px 12px;border-radius:10px;background:#1f2937;color:#fff;font-size:.85rem;font-weight:700;text-decoration:none}
+h1{font-size:1.25rem;text-align:center;margin:8px 0 4px}
+.sub{text-align:center;font-size:.8rem;color:#8b95a7;margin-bottom:12px}
+.panel{background:#111827;border:1px solid #1f2a3d;border-radius:16px;padding:14px;margin-bottom:14px}
+.rules{font-size:.82rem;color:#ccd;line-height:1.5}
+.rules b{color:#f59e0b}
+.summary{text-align:center;font-size:.9rem;font-weight:700;margin-bottom:12px}
+.tier{margin-bottom:14px}
+.th{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.95rem;margin-bottom:6px}
+.th span:last-child{font-size:.8rem;color:#8b95a7}
+.row{background:#111827;border:1px solid #1f2a3d;border-radius:12px;padding:10px 12px;margin-bottom:6px}
+.row .top{display:flex;justify-content:space-between;gap:8px}
+.row .n{font-weight:700;word-break:break-word}
+.row .v{font-size:.8rem;color:#f59e0b;white-space:nowrap}
+.row .d{font-size:.75rem;color:#8b95a7;margin-top:3px}
+.empty{font-size:.8rem;color:#8b95a7;padding:6px 2px}
+#status{text-align:center;font-size:.75rem;color:#8b95a7;margin-top:6px;min-height:1em}
+</style>
+</head>
+<body>
+<a class="back" href="/">← Back to House</a>
+<h1>🏆 AUDITION STANDINGS</h1>
+<div class="sub">Live ranking for this week's house spots</div>
+
+<div class="panel rules">
+  <b>How to qualify:</b> reach <b>1,000 clout</b> and finish <b>5 daily chores</b> this week.<br>
+  <b>Then rank by pitch votes:</b> top 15 are ⭐ Fan Picks. Ranks 16 to 25 fight in the 🥊 Last Chance Arena for 5 wildcard spots. Everyone else is on the 📋 Waitlist.<br>
+  <b>Tie?</b> The earlier signup wins. Resets every Monday, Lagos time.
+</div>
+
+<div class="summary" id="summary"></div>
+<div id="list">Loading...</div>
+<div id="status"></div>
+
+<script>
+const SUB_URL = "https://agxbdnogjbzzgnnygrxy.supabase.co";
+const SUB_KEY = "sb_publishable_0B5B_MC_7BIovYyDQXWXvw_2RaE77d5";
+const HDR = {
+  'apikey': SUB_KEY,
+  'Authorization': `Bearer ${SUB_KEY}`,
+  'Content-Type': 'application/json'
+};
+const $ = id => document.getElementById(id);
+
+const TIERS = [
+  ['fan_pick', '⭐ Fan Picks (straight in)', '#f59e0b', 15],
+  ['arena', '🥊 Last Chance Arena', '#22d3ee', 10],
+  ['waitlist', '📋 Waitlist', '#8b95a7', 0],
+  ['not_qualified', '🔒 Not qualified yet', '#e63946', 0]
+];
+
+async function load() {
+  try {
+    const r = await fetch(`${SUB_URL}/rest/v1/rpc/get_qualification`, {
+      method: 'POST', headers: HDR, body: '{}'
+    });
+    const data = await r.json();
+    if (!Array.isArray(data)) {
+      $('status').textContent = 'Load error: ' + (data.message || r.status);
+      return;
+    }
+    const qualified = data.filter(x => x.eligible).length;
+    $('summary').textContent = qualified + ' qualified out of ' + data.length + ' auditions';
+    $('list').innerHTML = '';
+    TIERS.forEach(t => {
+      const rows = data.filter(x => x.tier === t[0]);
+      const wrap = document.createElement('div');
+      wrap.className = 'tier';
+      const head = document.createElement('div');
+      head.className = 'th';
+      const title = document.createElement('span');
+      title.textContent = t[1];
+      title.style.color = t[2];
+      const count = document.createElement('span');
+      count.textContent = rows.length + (t[3] ? ' / ' + t[3] : '');
+      head.appendChild(title);
+      head.appendChild(count);
+      wrap.appendChild(head);
+      if (!rows.length) {
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.textContent = 'Nobody here yet.';
+        wrap.appendChild(e);
+      }
+      rows.forEach(x => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = '<div class="top"><div class="n"></div><div class="v"></div></div><div class="d"></div>';
+        row.querySelector('.n').textContent = x.pos + '. ' + x.uname;
+        row.querySelector('.v').textContent = '👍 ' + x.pvotes;
+        row.querySelector('.d').textContent =
+          '👑 ' + x.clout_wk + ' / 1000   •   🧹 ' + x.chores_wk + ' / 5';
+        wrap.appendChild(row);
+      });
+      $('list').appendChild(wrap);
+    });
+    if (!data.length) $('list').textContent = 'No auditions yet.';
+    $('status').textContent = 'Live • updates every 20s';
+  } catch (e) {
+    $('status').textContent = 'Cannot reach Supabase: ' + e.message;
+  }
+}
+
+load();
+setInterval(load, 20000);
+</script>
+</body>
+</html>
